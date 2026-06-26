@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WellCare — ระบบสวัสดิการสุขภาพ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #181c27;
+  --surface2: #1e2333;
+  --surface3: #252b3d;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --text2: #9099b0;
+  --text3: #5c6478;
+  --accent: #10b981;
+  --accent2: #059669;
+  --accent-dim: rgba(16,185,129,0.12);
+  --accent-glow: rgba(16,185,129,0.25);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59,130,246,0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --purple: #8b5cf6;
+  --purple-dim: rgba(139,92,246,0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --sidebar-w: 220px;
+  --font: 'IBM Plex Sans Thai', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+/* ─── scrollbar ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+/* ─── layout ─── */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; flex-shrink: 0; }
+.content { flex: 1; overflow-y: auto; padding: 28px; }
+
+/* ─── sidebar ─── */
+.brand { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+.brand-logo { display: flex; align-items: center; gap: 10px; }
+.brand-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+.brand-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+.brand-sub { font-size: 10px; color: var(--text3); margin-top: 1px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.user-card { margin: 12px; padding: 12px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
+.user-row { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.avatar.green { background: var(--accent-dim); color: var(--accent); }
+.avatar.amber { background: var(--amber-dim); color: var(--amber); }
+.avatar.blue { background: var(--blue-dim); color: var(--blue); }
+.user-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.user-role-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; background: var(--surface3); color: var(--text2); border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
+
+.role-switcher { padding: 10px 12px; }
+.role-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.role-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.role-btn { font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+.role-btn:hover { border-color: var(--accent); color: var(--accent); }
+.role-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+.nav { padding: 8px 0; flex: 1; overflow-y: auto; }
+.nav-group-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 18px 4px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 18px; color: var(--text2); cursor: pointer; border-radius: 0; transition: all 0.15s; font-size: 13px; border-left: 2px solid transparent; margin-bottom: 1px; }
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--accent); background: var(--accent-dim); border-left-color: var(--accent); }
+.nav-item i { font-size: 16px; flex-shrink: 0; }
+.nav-badge { margin-left: auto; font-size: 10px; background: var(--red); color: #fff; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+.nav-badge.amber { background: var(--amber); }
+.nav-badge.green { background: var(--accent); }
+
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.footer-btn { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-sm); color: var(--text3); cursor: pointer; font-size: 12px; transition: all 0.15s; }
+.footer-btn:hover { color: var(--text); background: var(--surface2); }
+.footer-btn i { font-size: 15px; }
+
+/* ─── topbar ─── */
+.topbar-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.topbar-spacer { flex: 1; }
+.topbar-chip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; color: var(--text2); }
+.topbar-chip i { font-size: 14px; }
+.notif-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text2); cursor: pointer; position: relative; transition: all 0.15s; }
+.notif-btn:hover { border-color: var(--border2); color: var(--text); }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; background: var(--red); border-radius: 50%; border: 1.5px solid var(--surface); }
+
+/* ─── pages (hidden by default) ─── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── section header ─── */
+.section-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+.section-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+.section-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+.head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ─── buttons ─── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; text-decoration: none; }
+.btn i { font-size: 15px; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: var(--surface2); color: var(--text2); border-color: var(--border2); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--surface3); }
+.btn-danger { background: var(--red-dim); color: var(--red); border-color: rgba(239,68,68,0.3); }
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-icon { width: 32px; height: 32px; padding: 0; justify-content: center; }
+
+/* ─── stat cards ─── */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; position: relative; overflow: hidden; transition: border-color 0.2s; }
+.stat-card:hover { border-color: var(--border2); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.stat-card.c-green::before { background: var(--accent); }
+.stat-card.c-amber::before { background: var(--amber); }
+.stat-card.c-blue::before { background: var(--blue); }
+.stat-card.c-red::before { background: var(--red); }
+.stat-card.c-purple::before { background: var(--purple); }
+.stat-num { font-size: 30px; font-weight: 600; font-family: var(--mono); letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+.stat-num.green { color: var(--accent); }
+.stat-num.amber { color: var(--amber); }
+.stat-num.blue { color: var(--blue); }
+.stat-num.red { color: var(--red); }
+.stat-num.purple { color: var(--purple); }
+.stat-label { font-size: 12px; color: var(--text2); }
+.stat-icon { position: absolute; bottom: 14px; right: 16px; font-size: 28px; opacity: 0.08; }
+
+/* ─── pipeline ─── */
+.pipeline { display: flex; align-items: center; gap: 0; margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+.pipe-step { display: flex; align-items: center; gap: 8px; flex: 1; }
+.pipe-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; border: 2px solid var(--border2); color: var(--text3); transition: all 0.3s; }
+.pipe-dot.done { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.pipe-dot.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+.pipe-info { flex: 1; min-width: 0; }
+.pipe-name { font-size: 11px; font-weight: 500; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pipe-count { font-size: 10px; color: var(--text3); }
+.pipe-line { width: 24px; height: 1px; background: var(--border2); flex-shrink: 0; }
+
+/* ─── table ─── */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.table-toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; min-width: 200px; }
+.search-box i { color: var(--text3); font-size: 15px; }
+.search-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: var(--font); width: 100%; }
+.search-box input::placeholder { color: var(--text3); }
+.filter-select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; color: var(--text2); font-size: 13px; font-family: var(--font); outline: none; cursor: pointer; }
+.filter-select:focus { border-color: var(--accent); }
+.table-spacer { flex: 1; }
+table { width: 100%; border-collapse: collapse; }
+thead th { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 13px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.12s; }
+tbody tr:hover { background: var(--surface2); }
+.emp-name { font-weight: 500; }
+.emp-id { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+.amount-cell { font-family: var(--mono); font-size: 13px; font-weight: 500; text-align: right; }
+
+/* ─── badges / pills ─── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.badge-green { background: var(--accent-dim); color: var(--accent); }
+.badge-amber { background: var(--amber-dim); color: var(--amber); }
+.badge-blue { background: var(--blue-dim); color: var(--blue); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-gray { background: var(--surface3); color: var(--text2); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); }
+.type-pill { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface3); color: var(--text2); border: 1px solid var(--border); }
+
+/* ─── action group ─── */
+.action-group { display: flex; gap: 5px; align-items: center; }
+.act-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; font-family: var(--font); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.act-btn i { font-size: 13px; }
+.act-approve { background: var(--accent-dim); color: var(--accent); border-color: rgba(16,185,129,0.3); }
+.act-approve:hover { background: rgba(16,185,129,0.2); }
+.act-return { background: var(--blue-dim); color: var(--blue); border-color: rgba(59,130,246,0.3); }
+.act-return:hover { background: rgba(59,130,246,0.2); }
+.act-reject { background: var(--red-dim); color: var(--red); border-color: rgba(239,68,68,0.3); }
+.act-reject:hover { background: rgba(239,68,68,0.2); }
+.act-view { background: var(--surface3); color: var(--text2); border-color: var(--border2); }
+.act-view:hover { color: var(--text); }
+
+/* ─── tabs ─── */
+.tab-bar { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.tab { padding: 10px 16px; font-size: 13px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; transition: all 0.15s; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-count { font-size: 10px; background: var(--surface3); border-radius: 10px; padding: 1px 6px; font-family: var(--mono); }
+.tab.active .tab-count { background: var(--accent-dim); color: var(--accent); }
+
+/* ─── form ─── */
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.form-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.form-card-title i { color: var(--accent); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.form-input, .form-select, .form-textarea { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-size: 13px; font-family: var(--font); outline: none; transition: border-color 0.15s; width: 100%; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select option { background: var(--surface2); }
+.upload-zone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); }
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
+.upload-zone i { font-size: 32px; color: var(--text3); margin-bottom: 10px; display: block; }
+.upload-zone .upload-text { font-size: 13px; color: var(--text2); }
+.upload-zone .upload-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.file-preview { display: flex; align-items: center; gap: 10px; background: var(--surface3); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 10px; }
+.file-preview i { color: var(--amber); font-size: 20px; }
+.file-name { font-size: 12px; color: var(--text); flex: 1; }
+.file-remove { color: var(--text3); cursor: pointer; font-size: 16px; }
+.file-remove:hover { color: var(--red); }
+
+/* ─── progress / budget bar ─── */
+.budget-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.budget-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+.budget-label { font-size: 13px; color: var(--text2); }
+.budget-vals { font-size: 12px; color: var(--text3); }
+.budget-vals b { color: var(--text); }
+.progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.progress-fill.green { background: var(--accent); }
+.progress-fill.amber { background: var(--amber); }
+.progress-fill.red { background: var(--red); }
+
+/* ─── modal ─── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; }
+.modal-head { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.modal-close { width: 28px; height: 28px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+.modal-close:hover { color: var(--text); border-color: var(--border2); }
+.modal-body { padding: 20px 24px; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ─── detail row ─── */
+.detail-row { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.detail-row:last-child { border-bottom: none; }
+.detail-key { font-size: 12px; color: var(--text2); width: 140px; flex-shrink: 0; }
+.detail-val { font-size: 13px; color: var(--text); flex: 1; }
+
+/* ─── chart ─── */
+.chart-bar-group { display: flex; flex-direction: column; gap: 10px; }
+.chart-bar-row { display: flex; align-items: center; gap: 10px; }
+.chart-bar-label { font-size: 12px; color: var(--text2); width: 100px; flex-shrink: 0; text-align: right; }
+.chart-bar-track { flex: 1; height: 20px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+.chart-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; }
+.chart-bar-fill span { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.85); font-family: var(--mono); }
+.chart-bar-val { font-size: 12px; color: var(--text2); width: 60px; font-family: var(--mono); }
+
+/* ─── toast ─── */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; min-width: 260px; transform: translateY(20px); opacity: 0; transition: all 0.25s; pointer-events: all; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast i { font-size: 18px; }
+.toast.success i { color: var(--accent); }
+.toast.error i { color: var(--red); }
+.toast.warning i { color: var(--amber); }
+
+/* ─── empty state ─── */
+.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty i { font-size: 40px; margin-bottom: 12px; display: block; }
+.empty p { font-size: 13px; }
+
+/* ─── dashboard grid ─── */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.dash-grid .full { grid-column: 1 / -1; }
+@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.card-title-left { display: flex; align-items: center; gap: 6px; }
+.card-title-left i { color: var(--accent); }
+
+/* ─── timeline ─── */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-item { display: flex; gap: 12px; padding: 10px 0; border-left: none; position: relative; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-dot.green { background: var(--accent); }
+.tl-dot.amber { background: var(--amber); }
+.tl-dot.red { background: var(--red); }
+.tl-dot.blue { background: var(--blue); }
+.tl-body { flex: 1; }
+.tl-name { font-size: 12px; color: var(--text); font-weight: 500; }
+.tl-detail { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.tl-time { font-size: 11px; color: var(--text3); font-family: var(--mono); white-space: nowrap; }
+
+/* ─── employee page ─── */
+.benefit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.benefit-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; transition: border-color 0.2s; }
+.benefit-card:hover { border-color: var(--border2); }
+.benefit-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+.benefit-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.benefit-desc { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+.benefit-remaining { font-size: 20px; font-weight: 600; font-family: var(--mono); }
+.benefit-of { font-size: 11px; color: var(--text3); }
+
+/* ─── utility ─── */
+.sep { height: 1px; background: var(--border); margin: 20px 0; }
+.text-muted { color: var(--text2); }
+.text-mono { font-family: var(--mono); }
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mb-16 { margin-bottom: 16px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <div class="brand-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+        <div>
+          <div class="brand-name">WellCare</div>
+          <div class="brand-sub">Health Benefits</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- user card -->
+    <div class="user-card">
+      <div class="user-row">
+        <div class="avatar green" id="sidebar-avatar">HR</div>
+        <div>
+          <div class="user-name" id="sidebar-name">สมหญิง วงษ์สุวรรณ</div>
+          <div class="user-role-tag"><i class="ti ti-shield-check" style="font-size:11px"></i> <span id="sidebar-role">HR Admin</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- role switcher (demo) -->
+    <div class="role-switcher">
+      <div class="role-label">จำลอง Role</div>
+      <div class="role-btns">
+        <button class="role-btn active" onclick="switchRole('hr')">HR</button>
+        <button class="role-btn" onclick="switchRole('employee')">พนักงาน</button>
+        <button class="role-btn" onclick="switchRole('manager')">ผู้จัดการ</button>
+      </div>
+    </div>
+
+    <nav class="nav" id="sidebar-nav">
+      <!-- filled by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="footer-btn"><i class="ti ti-settings"></i> ตั้งค่าระบบ</div>
+      <div class="footer-btn" style="color:var(--red)"><i class="ti ti-logout"></i> ออกจากระบบ</div>
+    </div>
+  </aside>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title" id="topbar-title">ภาพรวมระบบ</span>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-chip"><i class="ti ti-calendar"></i> <span id="today-date"></span></div>
+      <div class="notif-btn" onclick="showToast('มีการเบิกใหม่รออนุมัติ 2 รายการ','warning')">
+        <i class="ti ti-bell" style="font-size:16px"></i>
+        <div class="notif-dot"></div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ══ PAGE: HR DASHBOARD ══ -->
+      <div class="page active" id="page-dashboard">
+        <div class="section-head">
+          <div>
+            <div class="section-title">ภาพรวมระบบ</div>
+            <div class="section-sub">ข้อมูลประจำเดือน มิถุนายน 2569</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportExcel()"><i class="ti ti-download"></i> Export รายงาน</button>
+            <button class="btn btn-primary btn-sm" onclick="navigateTo('claims')"><i class="ti ti-plus"></i> รับเรื่องใหม่</button>
+          </div>
+        </div>
+
+        <!-- pipeline -->
+        <div class="pipeline">
+          <div class="pipe-step">
+            <div class="pipe-dot done"><i class="ti ti-check" style="font-size:12px"></i></div>
+            <div class="pipe-info"><div class="pipe-name">รอรับเรื่อง</div><div class="pipe-count">3 รายการ</div></div>
+          </div>
+          <div class="pipe-line"></div>
+          <div class="pipe-step">
+            <div class="pipe-dot active">2</div>
+            <div class="pipe-info"><div class="pipe-name">รออนุมัติ</div><div class="pipe-count">2 รายการ</div></div>
+          </div>
+          <div class="pipe-line"></div>
+          <div class="pipe-step">
+            <div class="pipe-dot">3</div>
+            <div class="pipe-info"><div class="pipe-name">อยู่ในรอบ</div><div class="pipe-count">5 รายการ</div></div>
+          </div>
+          <div class="pipe-line"></div>
+          <div class="pipe-step">
+            <div class="pipe-dot">4</div>
+            <div class="pipe-info"><div class="pipe-name">จ่ายแล้ว</div><div class="pipe-count">18 รายการ</div></div>
+          </div>
+        </div>
+
+        <!-- stats -->
+        <div class="stats-row">
+          <div class="stat-card c-amber">
+            <div class="stat-num amber">3</div>
+            <div class="stat-label">รอรับเรื่อง</div>
+            <i class="ti ti-inbox stat-icon"></i>
+          </div>
+          <div class="stat-card c-blue">
+            <div class="stat-num blue">2</div>
+            <div class="stat-label">รออนุมัติ</div>
+            <i class="ti ti-clock stat-icon"></i>
+          </div>
+          <div class="stat-card c-green">
+            <div class="stat-num green">18</div>
+            <div class="stat-label">จ่ายแล้วเดือนนี้</div>
+            <i class="ti ti-check stat-icon"></i>
+          </div>
+          <div class="stat-card c-purple">
+            <div class="stat-num purple">฿124,500</div>
+            <div class="stat-label">ยอดเบิกรวมเดือนนี้</div>
+            <i class="ti ti-coin stat-icon"></i>
+          </div>
+          <div class="stat-card c-red">
+            <div class="stat-num red">1</div>
+            <div class="stat-label">ถูกปฏิเสธ</div>
+            <i class="ti ti-x stat-icon"></i>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <!-- chart -->
+          <div class="card">
+            <div class="card-title">
+              <div class="card-title-left"><i class="ti ti-chart-bar"></i> ยอดเบิกแยกประเภท</div>
+              <span style="font-size:11px;color:var(--text3)">มิ.ย. 2569</span>
+            </div>
+            <div class="chart-bar-group">
+              <div class="chart-bar-row">
+                <div class="chart-bar-label">ทันตกรรม</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:72%;background:var(--accent)"><span>฿42,000</span></div></div>
+                <div class="chart-bar-val">42,000</div>
+              </div>
+              <div class="chart-bar-row">
+                <div class="chart-bar-label">OPD ทั่วไป</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:55%;background:var(--blue)"><span>฿32,000</span></div></div>
+                <div class="chart-bar-val">32,000</div>
+              </div>
+              <div class="chart-bar-row">
+                <div class="chart-bar-label">IPD นอนโรงพยาบาล</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:45%;background:var(--purple)"><span>฿26,500</span></div></div>
+                <div class="chart-bar-val">26,500</div>
+              </div>
+              <div class="chart-bar-row">
+                <div class="chart-bar-label">สายตา</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:24%;background:var(--amber)"><span>฿14,000</span></div></div>
+                <div class="chart-bar-val">14,000</div>
+              </div>
+              <div class="chart-bar-row">
+                <div class="chart-bar-label">กายภาพบำบัด</div>
+                <div class="chart-bar-track"><div class="chart-bar-fill" style="width:17%;background:var(--red)"><span>฿10,000</span></div></div>
+                <div class="chart-bar-val">10,000</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- recent -->
+          <div class="card">
+            <div class="card-title">
+              <div class="card-title-left"><i class="ti ti-activity"></i> กิจกรรมล่าสุด</div>
+            </div>
+            <div class="timeline">
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-name">กานดา เทียนยอด — อนุมัติแล้ว</div>
+                  <div class="tl-detail">ทันตกรรม ฿1,000</div>
+                </div>
+                <div class="tl-time">09:41</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot amber"></div>
+                <div class="tl-body">
+                  <div class="tl-name">ประเสริฐ มีสุข — รอผู้จัดการ</div>
+                  <div class="tl-detail">IPD ฿15,000</div>
+                </div>
+                <div class="tl-time">08:15</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot blue"></div>
+                <div class="tl-body">
+                  <div class="tl-name">วนิดา สุทธิพันธ์ — ยื่นเรื่องใหม่</div>
+                  <div class="tl-detail">OPD ฿800</div>
+                </div>
+                <div class="tl-time">07:55</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot red"></div>
+                <div class="tl-body">
+                  <div class="tl-name">สมชาย ดีมาก — ปฏิเสธ</div>
+                  <div class="tl-detail">เอกสารไม่ครบ</div>
+                </div>
+                <div class="tl-time">เมื่อวาน</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- budget overview -->
+          <div class="card full">
+            <div class="card-title">
+              <div class="card-title-left"><i class="ti ti-wallet"></i> วงเงินสวัสดิการรายแผน</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+              <div>
+                <div class="budget-header"><div class="budget-label">แผน 1 (พนักงานใหม่)</div><div class="budget-vals">ใช้ <b>฿18,400</b> / ฿30,000</div></div>
+                <div class="progress-bar"><div class="progress-fill amber" style="width:61%"></div></div>
+              </div>
+              <div>
+                <div class="budget-header"><div class="budget-label">แผน 2 (พนักงานทั่วไป)</div><div class="budget-vals">ใช้ <b>฿35,200</b> / ฿50,000</div></div>
+                <div class="progress-bar"><div class="progress-fill green" style="width:70%"></div></div>
+              </div>
+              <div>
+                <div class="budget-header"><div class="budget-label">แผน 3 (ผู้บริหาร)</div><div class="budget-vals">ใช้ <b>฿70,900</b> / ฿80,000</div></div>
+                <div class="progress-bar"><div class="progress-fill red" style="width:89%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: CLAIMS (HR) ══ -->
+      <div class="page" id="page-claims">
+        <div class="section-head">
+          <div>
+            <div class="section-title">รับเรื่องเบิก</div>
+            <div class="section-sub">จัดการคำขอเบิกสวัสดิการทั้งหมด</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportExcel()"><i class="ti ti-table-export"></i> Export Excel</button>
+          </div>
+        </div>
+
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card c-amber"><div class="stat-num amber">3</div><div class="stat-label">รอรับเรื่อง</div><i class="ti ti-inbox stat-icon"></i></div>
+          <div class="stat-card c-blue"><div class="stat-num blue">2</div><div class="stat-label">รออนุมัติ</div><i class="ti ti-clock stat-icon"></i></div>
+          <div class="stat-card c-green"><div class="stat-num green">18</div><div class="stat-label">อนุมัติแล้ว</div><i class="ti ti-check stat-icon"></i></div>
+          <div class="stat-card c-red"><div class="stat-num red">1</div><div class="stat-label">ปฏิเสธ</div><i class="ti ti-x stat-icon"></i></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active" onclick="switchClaimTab(this,'all')">ทั้งหมด <span class="tab-count">24</span></div>
+          <div class="tab" onclick="switchClaimTab(this,'pending')">รอรับเรื่อง <span class="tab-count">3</span></div>
+          <div class="tab" onclick="switchClaimTab(this,'review')">รออนุมัติ <span class="tab-count">2</span></div>
+          <div class="tab" onclick="switchClaimTab(this,'approved')">อนุมัติแล้ว <span class="tab-count">18</span></div>
+          <div class="tab" onclick="switchClaimTab(this,'rejected')">ปฏิเสธ <span class="tab-count">1</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <i class="ti ti-search"></i>
+              <input type="text" placeholder="ค้นหาชื่อ หรือ รหัส..." oninput="filterClaims(this.value)">
+            </div>
+            <select class="filter-select" onchange="filterByType(this.value)">
+              <option value="">ประเภททั้งหมด</option>
+              <option value="OPD">OPD</option>
+              <option value="IPD">IPD</option>
+              <option value="DEN">ทันตกรรม</option>
+              <option value="EYE">สายตา</option>
+              <option value="PT">กายภาพ</option>
+            </select>
+            <select class="filter-select">
+              <option>แผนทั้งหมด</option>
+              <option>แผน 1</option>
+              <option>แผน 2</option>
+              <option>แผน 3</option>
+            </select>
+            <div class="table-spacer"></div>
+            <span style="font-size:12px;color:var(--text3)" id="claim-count">24 รายการ</span>
+          </div>
+          <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>วันที่ยื่น</th>
+                <th>พนักงาน</th>
+                <th>ประเภท</th>
+                <th>รายการ</th>
+                <th>เพื่อ</th>
+                <th style="text-align:right">ยื่น (฿)</th>
+                <th style="text-align:right">อนุมัติ (฿)</th>
+                <th>สถานะ</th>
+                <th>การดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody id="claims-tbody">
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: EMPLOYEE SUBMIT ══ -->
+      <div class="page" id="page-submit">
+        <div class="section-head">
+          <div>
+            <div class="section-title">ยื่นเรื่องเบิกสวัสดิการ</div>
+            <div class="section-sub">กรอกข้อมูลและแนบใบเสร็จ</div>
+          </div>
+        </div>
+
+        <!-- benefit cards -->
+        <div class="benefit-grid" id="benefit-cards">
+          <div class="benefit-card">
+            <div class="benefit-icon" style="background:var(--accent-dim)"><i class="ti ti-stethoscope" style="color:var(--accent)"></i></div>
+            <div class="benefit-card-title">OPD ผู้ป่วยนอก</div>
+            <div class="benefit-desc">ค่าตรวจ ยา คลินิกทั่วไป</div>
+            <div class="benefit-remaining green">฿8,200 <span class="benefit-of">/ ฿10,000 คงเหลือ</span></div>
+            <div class="progress-bar mt-8"><div class="progress-fill green" style="width:82%"></div></div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon" style="background:var(--purple-dim)"><i class="ti ti-building-hospital" style="color:var(--purple)"></i></div>
+            <div class="benefit-card-title">IPD ผู้ป่วยใน</div>
+            <div class="benefit-desc">ค่านอนโรงพยาบาล ผ่าตัด</div>
+            <div class="benefit-remaining purple">฿50,000 <span class="benefit-of">/ ฿50,000 คงเหลือ</span></div>
+            <div class="progress-bar mt-8"><div class="progress-fill green" style="width:100%"></div></div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon" style="background:var(--amber-dim)"><i class="ti ti-tooth" style="color:var(--amber)"></i></div>
+            <div class="benefit-card-title">ทันตกรรม</div>
+            <div class="benefit-desc">อุดฟัน ถอน จัดฟัน</div>
+            <div class="benefit-remaining amber">฿3,000 <span class="benefit-of">/ ฿5,000 คงเหลือ</span></div>
+            <div class="progress-bar mt-8"><div class="progress-fill amber" style="width:60%"></div></div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon" style="background:var(--blue-dim)"><i class="ti ti-eye" style="color:var(--blue)"></i></div>
+            <div class="benefit-card-title">สายตา</div>
+            <div class="benefit-desc">แว่น คอนแทคเลนส์ ตรวจตา</div>
+            <div class="benefit-remaining blue">฿0 <span class="benefit-of" style="color:var(--red)">หมดแล้ว</span></div>
+            <div class="progress-bar mt-8"><div class="progress-fill red" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- form -->
+        <div class="form-card">
+          <div class="form-card-title"><i class="ti ti-file-plus"></i> ข้อมูลการเบิก</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>ประเภทสวัสดิการ *</label>
+              <select class="form-select" id="claim-type">
+                <option value="">-- เลือกประเภท --</option>
+                <option value="OPD">OPD ผู้ป่วยนอก</option>
+                <option value="IPD">IPD ผู้ป่วยใน</option>
+                <option value="DEN">ทันตกรรม</option>
+                <option value="EYE">สายตา</option>
+                <option value="PT">กายภาพบำบัด</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>เบิกเพื่อ *</label>
+              <select class="form-select" id="claim-for">
+                <option value="self">ตนเอง</option>
+                <option value="spouse">คู่สมรส</option>
+                <option value="child">บุตร</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>วันที่รักษา *</label>
+              <input type="date" class="form-input" id="treat-date">
+            </div>
+            <div class="form-group">
+              <label>สถานพยาบาล *</label>
+              <input type="text" class="form-input" id="hospital" placeholder="ชื่อโรงพยาบาล หรือ คลินิก">
+            </div>
+            <div class="form-group">
+              <label>จำนวนเงินตามใบเสร็จ (฿) *</label>
+              <input type="number" class="form-input" id="amount" placeholder="0.00" min="0">
+            </div>
+            <div class="form-group">
+              <label>เลขที่ใบเสร็จ</label>
+              <input type="text" class="form-input" id="receipt-no" placeholder="เช่น RCP-2024-001">
+            </div>
+            <div class="form-group full">
+              <label>อาการ / รายละเอียด</label>
+              <textarea class="form-textarea" id="diagnosis" placeholder="ระบุอาการ หรือการรักษาโดยย่อ"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>แนบใบเสร็จ / เอกสาร *</label>
+              <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="upload-zone">
+                <i class="ti ti-cloud-upload"></i>
+                <div class="upload-text">คลิกหรือลากไฟล์มาวางที่นี่</div>
+                <div class="upload-hint">รองรับ PDF, JPG, PNG ขนาดไม่เกิน 10MB</div>
+              </div>
+              <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileUpload(this)">
+              <div id="file-preview-list"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="resetForm()"><i class="ti ti-refresh"></i> ล้างข้อมูล</button>
+          <button class="btn btn-primary" onclick="submitClaim()"><i class="ti ti-send"></i> ยื่นเรื่องเบิก</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: MY CLAIMS ══ -->
+      <div class="page" id="page-my-claims">
+        <div class="section-head">
+          <div>
+            <div class="section-title">ประวัติการเบิกของฉัน</div>
+            <div class="section-sub">ติดตามสถานะและประวัติการเบิกทั้งหมด</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary btn-sm" onclick="navigateTo('submit')"><i class="ti ti-plus"></i> ยื่นเรื่องใหม่</button>
+          </div>
+        </div>
+
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card c-amber"><div class="stat-num amber">1</div><div class="stat-label">รอดำเนินการ</div></div>
+          <div class="stat-card c-green"><div class="stat-num green">฿12,500</div><div class="stat-label">ได้รับแล้วปีนี้</div></div>
+          <div class="stat-card c-blue"><div class="stat-num blue">฿21,800</div><div class="stat-label">วงเงินคงเหลือ</div></div>
+          <div class="stat-card c-purple"><div class="stat-num purple">5</div><div class="stat-label">รายการทั้งหมด</div></div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div class="search-box"><i class="ti ti-search"></i><input type="text" placeholder="ค้นหา..."></div>
+            <div class="table-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportExcel()"><i class="ti ti-download"></i> Export</button>
+          </div>
+          <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>วันที่ยื่น</th><th>ประเภท</th><th>รายการ</th><th style="text-align:right">ยื่น (฿)</th><th style="text-align:right">ได้รับ (฿)</th><th>สถานะ</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>26 มิ.ย. 69</td>
+                <td><span class="type-pill">DEN</span></td>
+                <td>ถอนฟันคุด — คลินิกหมอแอม</td>
+                <td class="amount-cell">1,000</td>
+                <td class="amount-cell">—</td>
+                <td><span class="badge badge-amber"><i class="ti ti-clock" style="font-size:11px"></i> รอรับเรื่อง</span></td>
+                <td><button class="act-btn act-view" onclick="openDetailModal(0)"><i class="ti ti-eye"></i> ดู</button></td>
+              </tr>
+              <tr>
+                <td>10 มิ.ย. 69</td>
+                <td><span class="type-pill">OPD</span></td>
+                <td>ตรวจโรคทั่วไป — รพ.บำรุงราษฎร์</td>
+                <td class="amount-cell">1,500</td>
+                <td class="amount-cell">1,500</td>
+                <td><span class="badge badge-green"><i class="ti ti-check" style="font-size:11px"></i> อนุมัติแล้ว</span></td>
+                <td><button class="act-btn act-view" onclick="openDetailModal(1)"><i class="ti ti-eye"></i> ดู</button></td>
+              </tr>
+              <tr>
+                <td>01 พ.ค. 69</td>
+                <td><span class="type-pill">EYE</span></td>
+                <td>แว่นสายตา — ร้านแว่นทอง</td>
+                <td class="amount-cell">3,200</td>
+                <td class="amount-cell">3,000</td>
+                <td><span class="badge badge-green"><i class="ti ti-check" style="font-size:11px"></i> จ่ายแล้ว</span></td>
+                <td><button class="act-btn act-view"><i class="ti ti-eye"></i> ดู</button></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: APPROVE (MANAGER) ══ -->
+      <div class="page" id="page-approve">
+        <div class="section-head">
+          <div>
+            <div class="section-title">อนุมัติคำขอเบิก</div>
+            <div class="section-sub">รายการรออนุมัติจากผู้จัดการ</div>
+          </div>
+        </div>
+
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card c-amber"><div class="stat-num amber">2</div><div class="stat-label">รออนุมัติ</div></div>
+          <div class="stat-card c-green"><div class="stat-num green">14</div><div class="stat-label">อนุมัติแล้วเดือนนี้</div></div>
+          <div class="stat-card c-purple"><div class="stat-num purple">฿98,200</div><div class="stat-label">ยอดอนุมัติสะสม</div></div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <span style="font-size:13px;color:var(--text2);font-weight:500">รายการรออนุมัติ</span>
+            <div class="table-spacer"></div>
+            <button class="btn btn-primary btn-sm" onclick="approveAll()"><i class="ti ti-check-all"></i> อนุมัติทั้งหมด</button>
+          </div>
+          <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>วันที่ยื่น</th><th>พนักงาน</th><th>ประเภท</th><th>รายการ</th><th style="text-align:right">จำนวน (฿)</th><th>เอกสาร</th><th>การดำเนินการ</th></tr>
+            </thead>
+            <tbody id="approve-tbody">
+              <tr>
+                <td>26 มิ.ย. 69</td>
+                <td><div class="emp-name">ประเสริฐ มีสุข</div><div class="emp-id">AKR25031204</div></td>
+                <td><span class="type-pill">IPD</span></td>
+                <td>ผ่าตัดไส้ติ่ง — รพ.สมิติเวช</td>
+                <td class="amount-cell">15,000</td>
+                <td><button class="act-btn act-view"><i class="ti ti-file-text"></i> ดูไฟล์</button></td>
+                <td>
+                  <div class="action-group">
+                    <button class="act-btn act-approve" onclick="approveClaim(this,'ประเสริฐ มีสุข')"><i class="ti ti-check"></i> อนุมัติ</button>
+                    <button class="act-btn act-reject" onclick="rejectClaim(this)"><i class="ti ti-x"></i> ปฏิเสธ</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>25 มิ.ย. 69</td>
+                <td><div class="emp-name">วนิดา สุทธิพันธ์</div><div class="emp-id">AKR24089012</div></td>
+                <td><span class="type-pill">OPD</span></td>
+                <td>ตรวจรักษาทั่วไป — คลินิกชุมชน</td>
+                <td class="amount-cell">800</td>
+                <td><button class="act-btn act-view"><i class="ti ti-file-text"></i> ดูไฟล์</button></td>
+                <td>
+                  <div class="action-group">
+                    <button class="act-btn act-approve" onclick="approveClaim(this,'วนิดา สุทธิพันธ์')"><i class="ti ti-check"></i> อนุมัติ</button>
+                    <button class="act-btn act-reject" onclick="rejectClaim(this)"><i class="ti ti-x"></i> ปฏิเสธ</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: EMPLOYEES ══ -->
+      <div class="page" id="page-employees">
+        <div class="section-head">
+          <div>
+            <div class="section-title">รายชื่อพนักงาน</div>
+            <div class="section-sub">จัดการพนักงานและสิทธิ์สวัสดิการ</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost btn-sm"><i class="ti ti-upload"></i> Import CSV</button>
+            <button class="btn btn-primary btn-sm"><i class="ti ti-plus"></i> เพิ่มพนักงาน</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div class="search-box"><i class="ti ti-search"></i><input type="text" placeholder="ค้นหาชื่อหรือรหัส..."></div>
+            <select class="filter-select"><option>แผนทั้งหมด</option><option>แผน 1</option><option>แผน 2</option><option>แผน 3</option></select>
+            <div class="table-spacer"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportExcel()"><i class="ti ti-download"></i> Export</button>
+          </div>
+          <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>แผนก</th><th>แผนสวัสดิการ</th><th style="text-align:right">ใช้แล้ว (฿)</th><th style="text-align:right">คงเหลือ (฿)</th><th>สถานะ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="text-mono" style="font-size:12px">AKR25081308</td><td><div class="emp-name">กานดา เทียนยอด</div></td><td>Marketing</td><td><span class="badge badge-amber">แผน 3</span></td><td class="amount-cell">12,500</td><td class="amount-cell" style="color:var(--accent)">67,500</td><td><span class="badge badge-green">ใช้งาน</span></td></tr>
+              <tr><td class="text-mono" style="font-size:12px">AKR25031204</td><td><div class="emp-name">ประเสริฐ มีสุข</div></td><td>Engineering</td><td><span class="badge badge-blue">แผน 2</span></td><td class="amount-cell">28,000</td><td class="amount-cell" style="color:var(--accent)">22,000</td><td><span class="badge badge-green">ใช้งาน</span></td></tr>
+              <tr><td class="text-mono" style="font-size:12px">AKR24089012</td><td><div class="emp-name">วนิดา สุทธิพันธ์</div></td><td>HR</td><td><span class="badge badge-blue">แผน 2</span></td><td class="amount-cell">45,800</td><td class="amount-cell" style="color:var(--amber)">4,200</td><td><span class="badge badge-green">ใช้งาน</span></td></tr>
+              <tr><td class="text-mono" style="font-size:12px">AKR23010045</td><td><div class="emp-name">สมชาย ดีมาก</div></td><td>Finance</td><td><span class="badge badge-gray">แผน 1</span></td><td class="amount-cell">29,100</td><td class="amount-cell" style="color:var(--red)">900</td><td><span class="badge badge-green">ใช้งาน</span></td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: REPORT ══ -->
+      <div class="page" id="page-report">
+        <div class="section-head">
+          <div>
+            <div class="section-title">รายงานสรุป</div>
+            <div class="section-sub">ภาพรวมค่าใช้จ่ายสวัสดิการ</div>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary btn-sm" onclick="exportExcel()"><i class="ti ti-table-export"></i> Export Excel</button>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card c-purple"><div class="stat-num purple">฿124,500</div><div class="stat-label">ยอดรวมเดือนนี้</div></div>
+          <div class="stat-card c-green"><div class="stat-num green">฿892,300</div><div class="stat-label">ยอดรวมปีนี้</div></div>
+          <div class="stat-card c-amber"><div class="stat-num amber">฿107,700</div><div class="stat-label">วงเงินคงเหลือรวม</div></div>
+          <div class="stat-card c-blue"><div class="stat-num blue">24</div><div class="stat-label">รายการทั้งหมด</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><div class="card-title-left"><i class="ti ti-chart-bar"></i> ยอดเบิกแยกประเภท (ปีนี้)</div></div>
+          <div class="chart-bar-group">
+            <div class="chart-bar-row"><div class="chart-bar-label">ทันตกรรม</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:68%;background:var(--accent)"><span>฿280,400</span></div></div><div class="chart-bar-val">280,400</div></div>
+            <div class="chart-bar-row"><div class="chart-bar-label">OPD</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:55%;background:var(--blue)"><span>฿225,000</span></div></div><div class="chart-bar-val">225,000</div></div>
+            <div class="chart-bar-row"><div class="chart-bar-label">IPD</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:45%;background:var(--purple)"><span>฿186,000</span></div></div><div class="chart-bar-val">186,000</div></div>
+            <div class="chart-bar-row"><div class="chart-bar-label">สายตา</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:30%;background:var(--amber)"><span>฿124,200</span></div></div><div class="chart-bar-val">124,200</div></div>
+            <div class="chart-bar-row"><div class="chart-bar-label">กายภาพ</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:18%;background:var(--red)"><span>฿76,700</span></div></div><div class="chart-bar-val">76,700</div></div>
+          </div>
+        </div>
+
+        <div class="mt-16">
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <span style="font-size:13px;font-weight:500;color:var(--text2)">รายงานรายเดือน 2569</span>
+            <div class="table-spacer"></div>
+          </div>
+          <table>
+            <thead><tr><th>เดือน</th><th style="text-align:right">รายการ</th><th style="text-align:right">ยอดยื่น (฿)</th><th style="text-align:right">ยอดอนุมัติ (฿)</th><th style="text-align:right">ปฏิเสธ</th></tr></thead>
+            <tbody>
+              <tr><td>มิถุนายน 2569</td><td class="amount-cell">24</td><td class="amount-cell">130,200</td><td class="amount-cell">124,500</td><td class="amount-cell" style="color:var(--red)">1</td></tr>
+              <tr><td>พฤษภาคม 2569</td><td class="amount-cell">31</td><td class="amount-cell">158,400</td><td class="amount-cell">151,000</td><td class="amount-cell" style="color:var(--red)">2</td></tr>
+              <tr><td>เมษายน 2569</td><td class="amount-cell">19</td><td class="amount-cell">92,100</td><td class="amount-cell">89,400</td><td class="amount-cell" style="color:var(--red)">0</td></tr>
+              <tr><td>มีนาคม 2569</td><td class="amount-cell">28</td><td class="amount-cell">145,800</td><td class="amount-cell">138,200</td><td class="amount-cell" style="color:var(--red)">3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ══════════════ MODAL ══════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">รายละเอียดการเบิก</div>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ─── data ───
+const claimsData = [
+  { date:'26 มิ.ย. 69', name:'กานดา เทียนยอด', id:'AKR25081308', plan:'แผน 3', type:'DEN', desc:'[ทันตกรรม] ถอนฟันคุด — คลินิกหมอแอม', for:'ตนเอง', amount:1000, approved:null, status:'pending' },
+  { date:'25 มิ.ย. 69', name:'ประเสริฐ มีสุข', id:'AKR25031204', plan:'แผน 2', type:'IPD', desc:'ผ่าตัดไส้ติ่ง — รพ.สมิติเวช', for:'ตนเอง', amount:15000, approved:null, status:'review' },
+  { date:'24 มิ.ย. 69', name:'วนิดา สุทธิพันธ์', id:'AKR24089012', plan:'แผน 2', type:'OPD', desc:'ตรวจรักษาทั่วไป — คลินิกชุมชน', for:'ตนเอง', amount:800, approved:null, status:'review' },
+  { date:'20 มิ.ย. 69', name:'สมชาย ดีมาก', id:'AKR23010045', plan:'แผน 1', type:'OPD', desc:'ตรวจร่างกายประจำปี — รพ.บำรุงราษฎร์', for:'ตนเอง', amount:2500, approved:2500, status:'approved' },
+  { date:'18 มิ.ย. 69', name:'กานดา เทียนยอด', id:'AKR25081308', plan:'แผน 3', type:'EYE', desc:'ตัดแว่นสายตา — ร้านแว่นทอง', for:'ตนเอง', amount:3200, approved:3000, status:'approved' },
+  { date:'15 มิ.ย. 69', name:'ประเสริฐ มีสุข', id:'AKR25031204', plan:'แผน 2', type:'PT', desc:'กายภาพบำบัดหลัง — คลินิกฟื้นฟู', for:'ตนเอง', amount:4500, approved:4500, status:'approved' },
+  { date:'10 มิ.ย. 69', name:'วนิดา สุทธิพันธ์', id:'AKR24089012', plan:'แผน 2', type:'DEN', desc:'ถอนฟัน — คลินิกทันตแพทย์', for:'คู่สมรส', amount:1200, approved:null, status:'rejected' },
+  { date:'08 มิ.ย. 69', name:'สมชาย ดีมาก', id:'AKR23010045', plan:'แผน 1', type:'OPD', desc:'ตรวจเลือด — ห้องแล็บ', for:'ตนเอง', amount:900, approved:900, status:'approved' },
+];
+
+const statusLabel = { pending:'รอรับเรื่อง', review:'รออนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ' };
+const statusBadge = { pending:'badge-amber', review:'badge-blue', approved:'badge-green', rejected:'badge-red' };
+const statusIcon  = { pending:'ti-clock', review:'ti-user-check', approved:'ti-check', rejected:'ti-x' };
+const typeColor   = { OPD:'badge-blue', IPD:'badge-purple', DEN:'badge-amber', EYE:'badge-green', PT:'badge-red' };
+
+// ─── nav config ───
+const navConfigs = {
+  hr: [
+    { group:'หน้าหลัก', items:[
+      { id:'dashboard', icon:'ti-layout-dashboard', label:'ภาพรวมระบบ' },
+      { id:'claims', icon:'ti-inbox', label:'รับเรื่องเบิก', badge:'3', badgeColor:'red' },
+      { id:'employees', icon:'ti-users', label:'รายชื่อพนักงาน' },
+      { id:'report', icon:'ti-chart-bar', label:'รายงานสรุป' },
+    ]}
+  ],
+  employee: [
+    { group:'พนักงาน', items:[
+      { id:'submit', icon:'ti-file-plus', label:'ยื่นเรื่องเบิก' },
+      { id:'my-claims', icon:'ti-history', label:'ประวัติการเบิก' },
+    ]}
+  ],
+  manager: [
+    { group:'ผู้จัดการ', items:[
+      { id:'approve', icon:'ti-clipboard-check', label:'อนุมัติคำขอ', badge:'2', badgeColor:'amber' },
+      { id:'report', icon:'ti-chart-bar', label:'รายงานสรุป' },
+    ]}
+  ]
+};
+
+const roleConfig = {
+  hr:       { name:'สมหญิง วงษ์สุวรรณ', role:'HR Admin', avatar:'HR', avatarClass:'green', defaultPage:'dashboard' },
+  employee: { name:'กานดา เทียนยอด', role:'พนักงาน', avatar:'กา', avatarClass:'amber', defaultPage:'submit' },
+  manager:  { name:'ธนชัย ลิ้มประเสริฐ', role:'ผู้จัดการ', avatar:'ธน', avatarClass:'blue', defaultPage:'approve' },
+};
+
+let currentRole = 'hr';
+let currentPage = 'dashboard';
+let currentClaimTab = 'all';
+
+// ─── init ───
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+
+function switchRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.role-btn[onclick="switchRole('${role}')"]`).classList.add('active');
+  const cfg = roleConfig[role];
+  document.getElementById('sidebar-avatar').textContent = cfg.avatar;
+  document.getElementById('sidebar-avatar').className = `avatar ${cfg.avatarClass}`;
+  document.getElementById('sidebar-name').textContent = cfg.name;
+  document.getElementById('sidebar-role').textContent = cfg.role;
+  renderNav(role);
+  navigateTo(cfg.defaultPage);
+}
+
+function renderNav(role) {
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  navConfigs[role].forEach(section => {
+    const gl = document.createElement('div');
+    gl.className = 'nav-group-label';
+    gl.textContent = section.group;
+    nav.appendChild(gl);
+    section.items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'nav-item' + (item.id === currentPage ? ' active' : '');
+      el.setAttribute('data-page', item.id);
+      el.innerHTML = `<i class="ti ${item.icon}"></i>${item.label}${item.badge ? `<span class="nav-badge ${item.badgeColor||''}">${item.badge}</span>` : ''}`;
+      el.onclick = () => navigateTo(item.id);
+      nav.appendChild(el);
+    });
+  });
+}
+
+function navigateTo(pageId) {
+  currentPage = pageId;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + pageId);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.getAttribute('data-page') === pageId);
+  });
+  const labels = {
+    dashboard:'ภาพรวมระบบ', claims:'รับเรื่องเบิก', employees:'รายชื่อพนักงาน',
+    report:'รายงานสรุป', submit:'ยื่นเรื่องเบิก', 'my-claims':'ประวัติการเบิก', approve:'อนุมัติคำขอ'
+  };
+  document.getElementById('topbar-title').textContent = labels[pageId] || pageId;
+  if (pageId === 'claims') renderClaimsTable(currentClaimTab);
+}
+
+// ─── claims table ───
+function renderClaimsTable(filter) {
+  currentClaimTab = filter;
+  const data = filter === 'all' ? claimsData : claimsData.filter(c => c.status === filter);
+  document.getElementById('claim-count').textContent = data.length + ' รายการ';
+  const tbody = document.getElementById('claims-tbody');
+  if (!data.length) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><i class="ti ti-inbox"></i><p>ไม่พบรายการ</p></div></td></tr>`; return; }
+  tbody.innerHTML = data.map((c,i) => `
+    <tr>
+      <td>${c.date}</td>
+      <td><div class="emp-name">${c.name}</div><div class="emp-id">${c.id} · ${c.plan}</div></td>
+      <td><span class="type-pill">${c.type}</span></td>
+      <td>${c.desc}</td>
+      <td>${c.for}</td>
+      <td class="amount-cell">${c.amount.toLocaleString()}</td>
+      <td class="amount-cell">${c.approved !== null ? c.approved.toLocaleString() : '—'}</td>
+      <td><span class="badge ${statusBadge[c.status]}"><i class="ti ${statusIcon[c.status]}" style="font-size:11px"></i> ${statusLabel[c.status]}</span></td>
+      <td>
+        <div class="action-group">
+          <button class="act-btn act-view" onclick="openDetailModal(${i})"><i class="ti ti-eye"></i> ดู</button>
+          ${c.status==='pending' ? `<button class="act-btn act-approve" onclick="acceptClaim(${i},this)"><i class="ti ti-check"></i> รับ</button><button class="act-btn act-reject" onclick="rejectClaimHR(${i},this)"><i class="ti ti-x"></i> ปฏิเสธ</button>` : ''}
+          ${c.status==='review' ? `<button class="act-btn act-return" onclick="returnClaim(${i},this)"><i class="ti ti-arrow-back"></i> ส่งกลับ</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function switchClaimTab(el, filter) {
+  document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderClaimsTable(filter);
+}
+
+function filterClaims(val) {
+  const rows = document.querySelectorAll('#claims-tbody tr');
+  rows.forEach(r => { r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none'; });
+}
+
+function filterByType(val) {
+  const rows = document.querySelectorAll('#claims-tbody tr');
+  rows.forEach(r => { r.style.display = !val || r.textContent.includes(val) ? '' : 'none'; });
+}
+
+function acceptClaim(i, btn) {
+  claimsData[i].status = 'review';
+  showToast('รับเรื่องแล้ว — ส่งผู้จัดการอนุมัติ', 'success');
+  renderClaimsTable(currentClaimTab);
+}
+function rejectClaimHR(i, btn) {
+  claimsData[i].status = 'rejected';
+  showToast('ปฏิเสธคำขอแล้ว', 'error');
+  renderClaimsTable(currentClaimTab);
+}
+function returnClaim(i, btn) {
+  claimsData[i].status = 'pending';
+  showToast('ส่งกลับพนักงานแก้ไขแล้ว', 'warning');
+  renderClaimsTable(currentClaimTab);
+}
+
+// ─── modal ───
+function openDetailModal(idx) {
+  const c = claimsData[idx] || { date:'26 มิ.ย. 69', name:'กานดา เทียนยอด', id:'AKR25081308', plan:'แผน 3', type:'DEN', desc:'ถอนฟันคุด — คลินิกหมอแอม', for:'ตนเอง', amount:1000, approved:null, status:'pending' };
+  document.getElementById('modal-title').textContent = 'รายละเอียดการเบิก — ' + c.id;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="margin-bottom:16px">
+      <span class="badge ${statusBadge[c.status]}"><i class="ti ${statusIcon[c.status]}" style="font-size:11px"></i> ${statusLabel[c.status]}</span>
+    </div>
+    ${[
+      ['พนักงาน', c.name],['รหัสพนักงาน', c.id],['แผนสวัสดิการ', c.plan],
+      ['ประเภท', c.type],['รายการ', c.desc],['เบิกเพื่อ', c.for],
+      ['วันที่ยื่น', c.date],['จำนวนที่ยื่น','฿'+c.amount.toLocaleString()],
+      ['จำนวนที่อนุมัติ', c.approved ? '฿'+c.approved.toLocaleString() : 'ยังไม่อนุมัติ'],
+    ].map(([k,v]) => `<div class="detail-row"><div class="detail-key">${k}</div><div class="detail-val">${v}</div></div>`).join('')}
+    <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">ไฟล์แนบ</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ti ti-file-type-pdf" style="font-size:24px;color:var(--red)"></i>
+        <span style="font-size:13px">receipt_${c.id}.pdf</span>
+        <span class="btn btn-ghost btn-sm" style="margin-left:auto"><i class="ti ti-download"></i> ดาวน์โหลด</span>
+      </div>
+    </div>`;
+  document.getElementById('modal-foot').innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">ปิด</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ─── approve ───
+function approveClaim(btn, name) {
+  const row = btn.closest('tr');
+  row.style.opacity = '0.5';
+  setTimeout(() => { row.remove(); }, 300);
+  showToast('อนุมัติ — ' + name + ' เรียบร้อยแล้ว', 'success');
+}
+function rejectClaim(btn) {
+  const row = btn.closest('tr');
+  row.style.opacity = '0.5';
+  setTimeout(() => { row.remove(); }, 300);
+  showToast('ปฏิเสธคำขอแล้ว', 'error');
+}
+function approveAll() {
+  document.querySelectorAll('#approve-tbody tr').forEach(r => r.style.opacity = '0.3');
+  setTimeout(() => { document.getElementById('approve-tbody').innerHTML = ''; }, 350);
+  showToast('อนุมัติทั้งหมดเรียบร้อยแล้ว', 'success');
+}
+
+// ─── submit form ───
+function handleFileUpload(input) {
+  const list = document.getElementById('file-preview-list');
+  list.innerHTML = '';
+  Array.from(input.files).forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'file-preview';
+    div.innerHTML = `<i class="ti ti-file-text"></i><span class="file-name">${f.name} (${(f.size/1024).toFixed(0)} KB)</span><i class="ti ti-x file-remove" onclick="this.parentElement.remove()"></i>`;
+    list.appendChild(div);
+  });
+  showToast('แนบไฟล์เรียบร้อย: ' + input.files[0].name, 'success');
+}
+
+function submitClaim() {
+  const type = document.getElementById('claim-type').value;
+  const hospital = document.getElementById('hospital').value;
+  const amount = document.getElementById('amount').value;
+  if (!type || !hospital || !amount) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน','error'); return; }
+  showToast('ยื่นเรื่องเบิกสำเร็จ! รหัส CLM-2569-' + Math.floor(Math.random()*9000+1000), 'success');
+  resetForm();
+}
+
+function resetForm() {
+  ['claim-type','claim-for','treat-date','hospital','amount','receipt-no','diagnosis'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('file-preview-list').innerHTML = '';
+  document.getElementById('file-input').value = '';
+}
+
+// ─── export excel ───
+function exportExcel() {
+  const rows = [['วันที่','พนักงาน','รหัส','ประเภท','รายการ','เพื่อ','ยื่น (฿)','อนุมัติ (฿)','สถานะ']];
+  claimsData.forEach(c => rows.push([c.date,c.name,c.id,c.type,c.desc,c.for,c.amount,c.approved||'',statusLabel[c.status]]));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:20},{wch:14},{wch:6},{wch:40},{wch:10},{wch:10},{wch:12},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Health Benefits');
+  XLSX.writeFile(wb, 'wellcare-report-' + new Date().toISOString().slice(0,10) + '.xlsx');
+  showToast('Export Excel สำเร็จ', 'success');
+}
+
+// ─── toast ───
+let toastTimer = {};
+function showToast(msg, type='success') {
+  const icons = { success:'ti-circle-check', error:'ti-circle-x', warning:'ti-alert-triangle' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="ti ${icons[type]}"></i><span>${msg}</span>`;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('show'); }); });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// ─── boot ───
+switchRole('hr');
+</script>
+</body>
+</html>
