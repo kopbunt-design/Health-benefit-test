@@ -40,6 +40,28 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
 
+/* ─── login page ─── */
+.login-page { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.login-box { width: 380px; background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 36px 32px; }
+.login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+.login-logo-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; }
+.login-logo-name { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+.login-logo-sub { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+.login-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.login-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.login-label { font-size: 12px; color: var(--text2); font-weight: 500; display: block; margin-bottom: 6px; }
+.login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-size: 14px; font-family: var(--font); outline: none; transition: border-color 0.15s; margin-bottom: 16px; }
+.login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.login-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 11px; font-size: 14px; font-family: var(--font); font-weight: 500; cursor: pointer; transition: background 0.15s; margin-top: 4px; }
+.login-btn:hover { background: var(--accent2); }
+.login-demo { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.login-demo-label { font-size: 11px; color: var(--text3); margin-bottom: 10px; text-align: center; }
+.login-demo-btns { display: flex; gap: 8px; }
+.login-demo-btn { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 7px 8px; font-size: 11px; font-family: var(--font); color: var(--text2); cursor: pointer; text-align: center; transition: all 0.15s; }
+.login-demo-btn:hover { border-color: var(--accent); color: var(--accent); }
+.login-error { font-size: 12px; color: var(--red); background: var(--red-dim); border: 1px solid rgba(239,68,68,0.25); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 12px; display: none; }
+.login-error.show { display: block; }
+
 /* ─── scrollbar ─── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -325,7 +347,36 @@ label { font-size: 12px; color: var(--text2); font-weight: 500; }
 </head>
 <body>
 
-<div class="shell">
+<!-- ══════════════ LOGIN PAGE ══════════════ -->
+<div class="login-page" id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="ti ti-heart-rate-monitor"></i></div>
+      <div>
+        <div class="login-logo-name">WellCare</div>
+        <div class="login-logo-sub">Health Benefits System</div>
+      </div>
+    </div>
+    <div class="login-title">เข้าสู่ระบบ</div>
+    <div class="login-sub">กรุณาใส่ข้อมูลของคุณเพื่อเข้าใช้งาน</div>
+    <div class="login-error" id="login-error"><i class="ti ti-alert-circle"></i> อีเมลหรือรหัสผ่านไม่ถูกต้อง</div>
+    <label class="login-label">อีเมล</label>
+    <input class="login-input" type="email" id="login-email" placeholder="email@company.com" onkeydown="if(event.key==='Enter') doLogin()">
+    <label class="login-label">รหัสผ่าน</label>
+    <input class="login-input" type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-demo">
+      <div class="login-demo-label">— ทดสอบระบบ (demo) —</div>
+      <div class="login-demo-btns">
+        <button class="login-demo-btn" onclick="demoLogin('hr')"><i class="ti ti-shield-check" style="font-size:12px"></i> HR Admin</button>
+        <button class="login-demo-btn" onclick="demoLogin('employee')"><i class="ti ti-user" style="font-size:12px"></i> พนักงาน</button>
+        <button class="login-demo-btn" onclick="demoLogin('manager')"><i class="ti ti-briefcase" style="font-size:12px"></i> ผู้จัดการ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="app-shell" style="display:none">
   <!-- ══════════════ SIDEBAR ══════════════ -->
   <aside class="sidebar">
     <div class="brand">
@@ -364,8 +415,8 @@ label { font-size: 12px; color: var(--text2); font-weight: 500; }
     </nav>
 
     <div class="sidebar-footer">
-      <div class="footer-btn"><i class="ti ti-settings"></i> ตั้งค่าระบบ</div>
-      <div class="footer-btn" style="color:var(--red)"><i class="ti ti-logout"></i> ออกจากระบบ</div>
+      <div class="footer-btn" onclick="showToast('ฟีเจอร์ตั้งค่าระบบกำลังพัฒนา','warning')"><i class="ti ti-settings"></i> ตั้งค่าระบบ</div>
+      <div class="footer-btn" style="color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i> ออกจากระบบ</div>
     </div>
   </aside>
 
@@ -1222,8 +1273,46 @@ function showToast(msg, type='success') {
   }, 3500);
 }
 
+// ─── login / logout ───
+const demoAccounts = {
+  hr:       { email:'hr@wellcare.co.th',       pass:'hr1234',  role:'hr' },
+  employee: { email:'staff@wellcare.co.th',    pass:'staff1234', role:'employee' },
+  manager:  { email:'manager@wellcare.co.th',  pass:'mgr1234', role:'manager' },
+};
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  const match = Object.values(demoAccounts).find(a => a.email === email && a.pass === pass);
+  if (!match) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  enterApp(match.role);
+}
+
+function demoLogin(role) {
+  enterApp(role);
+}
+
+function enterApp(role) {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app-shell').style.display  = 'flex';
+  switchRole(role);
+  showToast('ยินดีต้อนรับ — ' + roleConfig[role].name, 'success');
+}
+
+function doLogout() {
+  if (!confirm('ต้องการออกจากระบบใช่ไหม?')) return;
+  document.getElementById('app-shell').style.display  = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value  = '';
+  document.getElementById('login-error').classList.remove('show');
+  showToast('ออกจากระบบเรียบร้อยแล้ว', 'warning');
+}
+
 // ─── boot ───
-switchRole('hr');
+document.getElementById('app-shell').style.display = 'none';
 </script>
 </body>
 </html>
